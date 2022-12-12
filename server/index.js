@@ -1,11 +1,15 @@
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
-const userRoutes = require('./routes/userRoutes')
-const messageRoute = require('./routes/messagesRoute')
-const socket = require('socket.io')
+const authRoutes = require('./routes/auth')
+const messageRoutes = require('./routes/messages')
 const app = express()
+const socket = require('socket.io')
 require('dotenv').config()
+
+app.use(cors())
+app.use(express.json())
+
 mongoose
 	.connect(
 		'mongodb+srv://admin:12345@cluster0.3aci7uv.mongodb.net/chat?retryWrites=true&w=majority',
@@ -16,16 +20,13 @@ mongoose
 	.catch(err => {
 		console.log(err.message)
 	})
-app.use(cors())
-app.use(express.json())
 
-app.use('/api/auth', userRoutes)
-app.use('/api/messages', messageRoute)
+app.use('/api/auth', authRoutes)
+app.use('/api/messages', messageRoutes)
 
-const server = app.listen(process.env.PORT, () => {
-	console.log('server Started on Port')
-})
-
+const server = app.listen(process.env.PORT, () =>
+	console.log(`Server started on ${process.env.PORT}`),
+)
 const io = socket(server, {
 	cors: {
 		origin: 'http://localhost:3000',
@@ -34,7 +35,6 @@ const io = socket(server, {
 })
 
 global.onlineUsers = new Map()
-
 io.on('connection', socket => {
 	global.chatSocket = socket
 	socket.on('add-user', userId => {
